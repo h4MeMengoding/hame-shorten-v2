@@ -22,35 +22,22 @@ export default withProjectAuth(async (req: NextApiRequest, res: NextApiResponse,
 
     if (domain !== newDomain) {
       // make sure domain doesn't exist
-      const project = await prisma.project.findUnique({
-        where: {
-          domain: newDomain
-        },
-        select: { id: true, domain: true, slug: true }
+      const existingProject = await prisma.project.findUnique({
+        where: { domain: newDomain },
       });
-      if (project && project.slug !== slug) {
-        return res.status(400).json({ error: 'Domain already exists' });
-      }
-      const [redisResponse, prismaResponse] = await Promise.all([
-        prisma.project.update({
-          where: {
-            slug
-          },
-          data: {
-            domain: newDomain
-          }
-        }),
-        changeDomainForLinks(project.id, domain, newDomain)
-      ]);
 
-      return res.status(200).json({
-        redisResponse,
-        prismaResponse
-      });
+      if (existingProject) {
+        return res.status(409).json({
+          domainError: 'Domain already exists'
+        });
+      }
+
+      await changeDomainForLinks(project.id, domain, newDomain);
     }
-    return res.status(200).json({ message: 'Domains are the same' });
+
+    res.status(200).json({});
   } else {
     res.setHeader('Allow', ['PUT']);
-    return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+    res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 });

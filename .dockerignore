@@ -1,0 +1,10 @@
+.git/objects
+.git/logs
+.github
+.vscode
+node_modules
+Dockerfile
+docker-compose.yml
+.next
+.env
+docker.env
